@@ -6,63 +6,65 @@ use System\Base\BaseComponent;
 
 class HomeComponent extends BaseComponent
 {
-    protected $package;
-
-    public function initialize()
-    {
-        //$this->package = $this->usePackage(?::class);
-    }
-
     /**
      * @acl(name=view)
      */
     public function viewAction()
     {
+        try {
+            if ($this->access->auth->check()) {
+                if ($this->app['default_component_users'] == 0) {
+                    return;
+                }
+
+                $defaultComponent = $this->modules->components->getById($this->app['default_component_users']);
+            } else {
+                if ($this->app['default_component_guests'] == 0) {
+                    return;
+                }
+
+                $defaultComponent = $this->modules->components->getById($this->app['default_component_guests']);
+            }
+
+            if ($defaultComponent['class'] === get_class($this)) {
+                return;
+            }
+
+            $controller = $this->helper->last(explode('/', $defaultComponent['route']));
+            $routeArr = explode('/', $defaultComponent['route']);
+            unset($routeArr[$this->helper->lastKey($routeArr)]);
+            $viewPath = join('/', $routeArr);
+
+            $reflection = new \ReflectionClass(($defaultComponent['class']));
+
+            $namespace = $reflection->getNamespaceName();
+
+            $this->view->setViewsDir($this->view->getViewsDir() . $viewPath);
+
+            $this->dispatcher->forward(
+                [
+                    'controller'    => $controller,
+                    'action'        => 'view',
+                    'namespace'     => $namespace
+                ]
+            );
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    public function addAction()
+    {
         return;
     }
 
-    /**
-     * @acl(name=add)
-     */
-    public function addAction()
-    {
-        $this->requestIsPost();
-
-        //$this->package->add{?}($this->postData());
-
-        $this->addResponse(
-            $this->package->packagesData->responseMessage,
-            $this->package->packagesData->responseCode
-        );
-    }
-
-    /**
-     * @acl(name=update)
-     */
     public function updateAction()
     {
-        $this->requestIsPost();
-
-        //$this->package->update{?}($this->postData());
-
-        $this->addResponse(
-            $this->package->packagesData->responseMessage,
-            $this->package->packagesData->responseCode
-        );
+        return;
     }
 
-    /**
-     * @acl(name=remove)
-     */
     public function removeAction()
     {
-        $this->requestIsPost();
-
-        //$this->package->remove{?}($this->postData());
-
-        $this->addResponse(
-            $this->package->packagesData->responseMessage,
-            $this->package->packagesData->responseCode
-        );
+        return;
     }
 }
